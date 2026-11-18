@@ -85,4 +85,21 @@ struct MLXTaskExtractorTests {
         #expect(TaskExtractor.defaultModelID.contains("Llama-3.2-1B"))
         #expect(TaskExtractor.taskSchema.contains("dueDate"))
     }
+
+    @Test(
+        "Extracts twice with one resident model",
+        .enabled(if: ProcessInfo.processInfo.environment["MLX_INTEGRATION_TESTS"] == "1")
+    )
+    func repeatedExtraction() async throws {
+        let extractor = TaskExtractor()
+        let text = "Alex Morgan 9:30 AM\nPlease send the project update by Friday."
+
+        let first = try await extractor.extract(from: text)
+        let second = try await extractor.extract(from: text)
+
+        #expect(first.metrics.modelLoadSeconds >= 0)
+        #expect(second.metrics.modelLoadSeconds == 0)
+        #expect(!first.rawOutput.isEmpty)
+        #expect(!second.rawOutput.isEmpty)
+    }
 }

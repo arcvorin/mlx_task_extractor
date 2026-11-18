@@ -55,7 +55,6 @@ public actor TaskExtractor {
 
     private var container: ModelContainer?
     private var grammarTemplate: GrammarTemplate?
-    private var grammarCannotClone = false
 
     private struct GrammarTemplate: Sendable {
         let constraint: GrammarConstraint
@@ -81,7 +80,6 @@ public actor TaskExtractor {
     public func unload() {
         container = nil
         grammarTemplate = nil
-        grammarCannotClone = false
     }
 
     @discardableResult
@@ -209,28 +207,18 @@ public actor TaskExtractor {
     }
 
     private func makeConstraint(container: ModelContainer) async throws -> GrammarTemplate {
-        if grammarCannotClone { return try await compileConstraint(container: container) }
         if let grammarTemplate {
-            do {
-                return GrammarTemplate(
-                    constraint: try grammarTemplate.constraint.clone(),
-                    vocabSize: grammarTemplate.vocabSize
-                )
-            } catch GrammarError.forkFailed {
-                self.grammarTemplate = nil
-                grammarCannotClone = true
-                return try await compileConstraint(container: container)
-            }
+            return GrammarTemplate(
+                constraint: try grammarTemplate.constraint.freshMatcher(),
+                vocabSize: grammarTemplate.vocabSize
+            )
         }
         let template = try await compileConstraint(container: container)
-        do {
-            let clone = try template.constraint.clone()
-            grammarTemplate = template
-            return GrammarTemplate(constraint: clone, vocabSize: template.vocabSize)
-        } catch GrammarError.forkFailed {
-            grammarCannotClone = true
-            return template
-        }
+        grammarTemplate = template
+        return GrammarTemplate(
+            constraint: try template.constraint.freshMatcher(),
+            vocabSize: template.vocabSize
+        )
     }
 
     private func compileConstraint(container: ModelContainer) async throws -> GrammarTemplate {
