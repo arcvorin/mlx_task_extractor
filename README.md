@@ -13,12 +13,14 @@ The repository includes `MLXTaskExtractor`, a reusable Swift library containing 
 
 ## Use the library
 
-After the repository URL and first release tag exist, add the package in Xcode or declare it in your app's `Package.swift`:
+After the first release tag exists, add the package in Xcode or declare it in your app's `Package.swift`:
 
 ```swift
 dependencies: [
-    // Replace REPOSITORY_URL with the Git URL after you create the repository.
-    .package(url: "REPOSITORY_URL", from: "0.1.0")
+    .package(
+        url: "https://github.com/arcvorin/mlx_task_extractor.git",
+        from: "0.1.0"
+    )
 ]
 ```
 
