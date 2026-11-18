@@ -7,11 +7,11 @@ import MLXLMCommon
 import Tokenizers
 
 public actor TaskExtractor {
-    public static let pipelineVersion = 11
+    public static let pipelineVersion = 12
     public static let defaultModelID = "mlx-community/Llama-3.2-1B-Instruct-4bit"
     public static let defaultMaxOutputTokens = 600
     public static let taskInstructions = """
-    Extract explicit, actionable tasks from the screen text below. Ignore navigation, labels, completed work, and vague ideas. Never invent details. Use null for missing due dates or assignees. Quote the source text in evidence.
+    Extract the distinct requests or unresolved problems that the message author wants addressed. A question needing an answer is a task. A reported ongoing failure is a task. Do not create separate tasks from explanations, desired outcomes, constraints, dates, account names, or other context; keep that context with the request it describes. Return each item once. Ignore navigation, labels, completed work, and vague ideas. Never invent details. Set dueDate only when the request explicitly says the task must be completed by, on, or before that date; message header dates and target periods are not due dates. Use null for missing due dates or assignees. Keep evidence to the shortest exact quote that supports the task.
     Return JSON only. /no_think
     """
     public static let taskSchema = #"""

@@ -183,13 +183,14 @@ enum TaskProvenanceEnricher {
     static func enrich(_ tasks: [ExtractedTask], sourceText: String) -> [ExtractedTask] {
         tasks.map { task in
             let dueDate = validatedDueDate(task.dueDate, sourceText: sourceText)
+            let supportingEvidence = exactSupportingEvidence(for: task, in: sourceText)
             guard let match = sourceRange(for: task.text, in: sourceText) else {
                 return ExtractedTask(
                     text: task.text,
                     requester: task.requester ?? requester(from: task.evidence ?? ""),
                     dueDate: dueDate,
                     assignee: task.assignee,
-                    evidence: task.evidence
+                    evidence: supportingEvidence ?? task.evidence
                 )
             }
             let prefix = String(sourceText[..<match.lowerBound])
@@ -199,14 +200,34 @@ enum TaskProvenanceEnricher {
                 requester: task.requester ?? requester(from: prefix),
                 dueDate: dueDate,
                 assignee: task.assignee,
-                evidence: quote.isEmpty ? task.evidence : quote
+                evidence: supportingEvidence ?? (quote.isEmpty ? task.evidence : quote)
             )
         }
+    }
+
+    private static func exactSupportingEvidence(
+        for task: ExtractedTask,
+        in sourceText: String
+    ) -> String? {
+        guard let evidence = task.evidence,
+              sourceRange(for: task.text, in: evidence) != nil,
+              let match = sourceRange(for: evidence, in: sourceText) else {
+            return nil
+        }
+        let quote = String(sourceText[match]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return quote.isEmpty ? nil : quote
     }
 
     private static func validatedDueDate(_ value: String?, sourceText: String) -> String? {
         guard let value else { return nil }
         let cleaned = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let deadlineCue = #"\b(?:by|before|due|deadline|until|no\s+later\s+than)\b"#
+        guard sourceText.range(
+            of: deadlineCue,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil else {
+            return nil
+        }
         guard cleaned.range(of: #"^(?:19|20)\d{2}$"#, options: .regularExpression) != nil else {
             return cleaned
         }
